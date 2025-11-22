@@ -13,9 +13,19 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    allowedHosts: [
+      'localhost',
+      '.railway.app', // Allow all Railway domains
+      'voicexfront-production.up.railway.app',
+    ],
   },
   preview: {
     host: true,
     port: process.env.PORT ? parseInt(process.env.PORT) : 4173,
+    allowedHosts: [
+      'localhost',
+      '.railway.app', // Allow all Railway domains
+      'voicexfront-production.up.railway.app',
+    ],
   },
 })
