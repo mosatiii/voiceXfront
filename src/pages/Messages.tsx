@@ -4,8 +4,7 @@
  */
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { MessageSquare, Send, Phone, Search, MoreVertical, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Send, Search, MoreVertical, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,7 +66,6 @@ export default function Messages() {
     contact.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedNumber = phoneNumbers.find((n) => n.id === selectedNumberId);
   const conversationMessages = selectedConversation ? conversations[selectedConversation] || [] : [];
 
   if (numbersLoading) {
@@ -174,8 +172,9 @@ export default function Messages() {
               <div>
                 {filteredConversations.map(([contact, msgs]) => {
                   const lastMessage = msgs[msgs.length - 1];
+                  // Count unread inbound messages (status is 'received' for inbound)
                   const unreadCount = msgs.filter(
-                    (m) => m.direction === 'inbound' && m.status !== 'read'
+                    (m) => m.direction === 'inbound' && m.status === 'received'
                   ).length;
 
                   return (

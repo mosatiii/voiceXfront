@@ -43,9 +43,9 @@ export const useSocket = () => {
     socketRef.current = socket;
 
     // Connection event handlers
-    socket.on(SOCKET_EVENTS.CONNECTED, (data) => {
+    socket.on(SOCKET_EVENTS.CONNECTED, () => {
       // Silently handle connection (reduce console noise)
-      // console.log('Socket connected:', data);
+      // console.log('Socket connected');
     });
 
     socket.on(SOCKET_EVENTS.DISCONNECT, () => {

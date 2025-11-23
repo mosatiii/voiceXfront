@@ -7,7 +7,6 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Check, CheckCheck, AlertCircle, Clock } from 'lucide-react';
 import { formatRelativeTime } from '@/utils/formatters';
-import { Badge } from '@/components/ui/badge';
 import type { Message } from '@/types/models';
 
 interface MessageThreadProps {
