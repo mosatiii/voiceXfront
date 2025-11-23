@@ -17,8 +17,19 @@ export default function Dashboard() {
 
   // Fetch dashboard data
   const { data: numbersData, isLoading: numbersLoading } = useMyNumbers();
-  const { data: messagesData, isLoading: messagesLoading } = useMessages({ limit: 5 });
-  const { data: callsData, isLoading: callsLoading } = useCalls({ limit: 5 });
+  
+  // Only fetch messages/calls if we have phone numbers
+  // Backend requires phoneNumberId, so we skip if no numbers yet
+  const hasNumbers = (numbersData?.phoneNumbers?.length ?? 0) > 0;
+  
+  const { data: messagesData, isLoading: messagesLoading } = useMessages(
+    { limit: 5 },
+    { enabled: hasNumbers } // Only fetch if we have numbers
+  );
+  const { data: callsData, isLoading: callsLoading } = useCalls(
+    { limit: 5 },
+    { enabled: hasNumbers } // Only fetch if we have numbers
+  );
 
   const stats = [
     {
@@ -72,9 +83,9 @@ export default function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
           >
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-50`} />
-              <CardContent className="p-6 relative">
+            <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden relative">
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-30 pointer-events-none`} />
+              <CardContent className="p-6 relative z-10">
                 <div className="flex items-center justify-between mb-4">
                   <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.gradient}`}>
                     <stat.icon className="w-6 h-6 text-white" />

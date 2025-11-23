@@ -44,11 +44,13 @@ export const useSocket = () => {
 
     // Connection event handlers
     socket.on(SOCKET_EVENTS.CONNECTED, (data) => {
-      console.log('Socket connected:', data);
+      // Silently handle connection (reduce console noise)
+      // console.log('Socket connected:', data);
     });
 
     socket.on(SOCKET_EVENTS.DISCONNECT, () => {
-      console.log('Socket disconnected');
+      // Silently handle disconnection (reduce console noise)
+      // console.log('Socket disconnected');
     });
 
     socket.on(SOCKET_EVENTS.ERROR, (error) => {

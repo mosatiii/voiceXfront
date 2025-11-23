@@ -24,6 +24,9 @@ export interface PhoneNumber {
   rentedAt: string;
   releasedAt?: string;
   userId: string;
+  // Usage statistics (may be null if not populated by backend)
+  messageCount?: number;
+  callCount?: number;
 }
 
 export interface AvailablePhoneNumber {

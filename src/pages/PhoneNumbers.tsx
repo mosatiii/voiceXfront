@@ -4,7 +4,7 @@
 
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Phone, Trash2 } from 'lucide-react';
+import { Plus, Phone, Trash2, MessageSquare, PhoneCall } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { useState } from 'react';
 
@@ -26,17 +25,22 @@ export default function PhoneNumbers() {
   const { data, isLoading } = useMyNumbers();
   const releaseNumber = useReleaseNumber();
   const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
-  const [selectedNumber, setSelectedNumber] = useState<string | null>(null);
+  const [selectedNumber, setSelectedNumber] = useState<{ id: string; phoneNumber: string } | null>(null);
 
   const handleRelease = () => {
     if (selectedNumber) {
-      releaseNumber.mutate(selectedNumber, {
+      releaseNumber.mutate(selectedNumber.id, {
         onSuccess: () => {
           setReleaseDialogOpen(false);
           setSelectedNumber(null);
         },
       });
     }
+  };
+
+  const openReleaseDialog = (id: string, phoneNumber: string) => {
+    setSelectedNumber({ id, phoneNumber });
+    setReleaseDialogOpen(true);
   };
 
   return (
@@ -103,6 +107,27 @@ export default function PhoneNumbers() {
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <span>Rented: {formatDate(number.rentedAt)}</span>
                   </div>
+                  
+                  {/* Message/Call Stats */}
+                  {(number.messageCount !== undefined || number.callCount !== undefined) && (
+                    <div className="grid grid-cols-2 gap-2 py-2">
+                      {number.messageCount !== undefined && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <MessageSquare className="w-4 h-4 text-purple-600" />
+                          <span className="font-medium">{number.messageCount}</span>
+                          <span className="text-gray-500">msgs</span>
+                        </div>
+                      )}
+                      {number.callCount !== undefined && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <PhoneCall className="w-4 h-4 text-green-600" />
+                          <span className="font-medium">{number.callCount}</span>
+                          <span className="text-gray-500">calls</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <div className="flex gap-2">
                     {number.capabilities?.sms && (
                       <Badge variant="outline">SMS</Badge>
@@ -111,38 +136,14 @@ export default function PhoneNumbers() {
                       <Badge variant="outline">Voice</Badge>
                     )}
                   </div>
-                  <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full text-red-600 hover:bg-red-50 hover:text-red-700"
-                        onClick={() => setSelectedNumber(number.id)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Release Number
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Release Phone Number?</DialogTitle>
-                        <DialogDescription>
-                          Are you sure you want to release {formatPhoneNumber(number.phoneNumber)}? This action cannot be undone.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setReleaseDialogOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          onClick={handleRelease}
-                          disabled={releaseNumber.isPending}
-                        >
-                          {releaseNumber.isPending ? 'Releasing...' : 'Release'}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    variant="outline"
+                    className="w-full text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => openReleaseDialog(number.id, number.phoneNumber)}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Release Number
+                  </Button>
                 </CardContent>
               </Card>
             </motion.div>
@@ -166,6 +167,30 @@ export default function PhoneNumbers() {
           </CardContent>
         </Card>
       )}
+
+      {/* Release Number Dialog - Single instance outside the loop */}
+      <Dialog open={releaseDialogOpen} onOpenChange={setReleaseDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Release Phone Number?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to release {selectedNumber ? formatPhoneNumber(selectedNumber.phoneNumber) : 'this number'}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReleaseDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRelease}
+              disabled={releaseNumber.isPending}
+            >
+              {releaseNumber.isPending ? 'Releasing...' : 'Release'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

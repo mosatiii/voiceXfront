@@ -8,10 +8,26 @@ import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { useUIStore } from '@/store/uiStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
 
 export default function AppLayout() {
   const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
   const closeSidebar = useUIStore((state) => state.closeSidebar);
+
+  // Force close sidebar on desktop
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024 && isSidebarOpen) {
+        closeSidebar();
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    // Initial check
+    handleResize();
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isSidebarOpen, closeSidebar]);
 
   return (
     <div className="min-h-screen bg-gray-50">

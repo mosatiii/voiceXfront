@@ -14,8 +14,9 @@ type CallStatus = 'idle' | 'connecting' | 'ringing' | 'active' | 'ended';
 
 /**
  * Custom hook to manage Twilio WebRTC calls
+ * @param phoneNumberId - The ID of the phone number to use for calls (required)
  */
-export const useWebRTC = () => {
+export const useWebRTC = (phoneNumberId?: string) => {
   const [device, setDevice] = useState<Device | null>(null);
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [currentCall, setCurrentCall] = useState<Call | null>(null);
@@ -25,12 +26,13 @@ export const useWebRTC = () => {
   const queryClient = useQueryClient();
   const { setActiveCall, clearActiveCall, updateCallDuration, activeCall } = useUIStore();
 
-  // Fetch Twilio token
+  // Fetch Twilio token - only fetch when we have a phoneNumberId
   const { data: tokenData } = useQuery({
-    queryKey: ['twilio-token'],
-    queryFn: callsApi.getTwilioToken,
+    queryKey: ['twilio-token', phoneNumberId],
+    queryFn: () => callsApi.getTwilioToken(phoneNumberId!),
     staleTime: 50 * 60 * 1000, // Token valid for ~1 hour
     retry: 2,
+    enabled: !!phoneNumberId, // Only run query when phoneNumberId is available
   });
 
   // Initialize Twilio Device

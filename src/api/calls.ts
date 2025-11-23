@@ -15,11 +15,13 @@ import type { Call } from '@/types/models';
 /**
  * Get Twilio access token for WebRTC
  */
-export const getTwilioToken = async (): Promise<GetTwilioTokenResponse> => {
-  const response = await apiClient.post<GetTwilioTokenResponse>('/calls/token');
+// ✅ CORRECT - Send phoneNumberId in body
+export const getTwilioToken = async (phoneNumberId: string): Promise<GetTwilioTokenResponse> => {
+  const response = await apiClient.post<GetTwilioTokenResponse>('/calls/token', {
+    phoneNumberId  // Send this in the request body!
+  });
   return response.data;
 };
-
 /**
  * Initiate an outbound call
  */

@@ -70,10 +70,11 @@ export const useReleaseNumber = () => {
 // Messages
 // ============================================================================
 
-export const useMessages = (params: GetMessagesParams) => {
+export const useMessages = (params: GetMessagesParams, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['messages', params],
     queryFn: () => messagesApi.getMessages(params),
+    enabled: options?.enabled ?? true, // Allow disabling the query
   });
 };
 
@@ -97,10 +98,11 @@ export const useSendMessage = () => {
 // Calls
 // ============================================================================
 
-export const useCalls = (params: GetCallsParams) => {
+export const useCalls = (params: GetCallsParams, options?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['calls', params],
     queryFn: () => callsApi.getCalls(params),
+    enabled: options?.enabled ?? true, // Allow disabling the query
   });
 };
 
