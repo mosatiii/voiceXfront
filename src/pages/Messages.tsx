@@ -263,22 +263,6 @@ export default function Messages() {
                   <p className="text-xs text-red-500 mt-2">Error loading messages. Check console.</p>
                 )}
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                <MessageSquare className="w-16 h-16 text-gray-300 mb-4" />
-                <p className="text-gray-500">No conversations match your search</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  {messages.length} message(s) found but filtered out
-                </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setSearchQuery('')}
-                  className="mt-4"
-                >
-                  Clear Search
-                </Button>
-              </div>
             )}
           </div>
         </div>
