@@ -101,7 +101,8 @@ export default function Calls() {
   // Filter call history
   const filteredCalls = calls.filter((call) => {
     const contact = call.direction === 'inbound' ? call.from : call.to;
-    return contact.toLowerCase().includes(searchQuery.toLowerCase());
+    // Safety check: ensure contact exists before calling toLowerCase
+    return contact ? contact.toLowerCase().includes(searchQuery.toLowerCase()) : false;
   });
 
   if (numbersLoading) {
