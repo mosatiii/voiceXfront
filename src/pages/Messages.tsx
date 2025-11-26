@@ -53,20 +53,6 @@ export default function Messages() {
                    (Array.isArray(messagesData) ? messagesData : []) || 
                    [];
 
-  // Log the actual messages array to see what we're getting
-  if (messagesData && messages.length === 0) {
-    console.log('⚠️ API returned data but messages array is empty:', {
-      messagesData,
-      messagesArray: messagesData?.messages,
-      messagesArrayLength: messagesData?.messages?.length,
-      messagesArrayType: typeof messagesData?.messages,
-      isArray: Array.isArray(messagesData?.messages),
-      total: messagesData?.total,
-      limit: messagesData?.limit,
-      offset: messagesData?.offset
-    });
-  }
-
   // Group messages by conversation
   const conversations = messages.reduce((acc, msg) => {
     // Ensure we have valid from/to values
@@ -77,28 +63,6 @@ export default function Messages() {
     acc[contact].push(msg);
     return acc;
   }, {} as Record<string, typeof messages>);
-  
-  // DEBUG - Always log to help diagnose issues
-  useEffect(() => {
-    console.log('📬 Messages Debug:', {
-      selectedNumberId,
-      phoneNumbersCount: phoneNumbers.length,
-      phoneNumbers: phoneNumbers.map(n => ({ id: n.id, number: n.phoneNumber })),
-      messagesData,
-      messagesArray: messagesData?.messages,
-      messagesCount: messages.length,
-      messagesLoading,
-      messagesError,
-      conversationsCount: Object.keys(conversations).length,
-      conversationKeys: Object.keys(conversations),
-      rawResponse: messagesData,
-      // Check if response structure is different
-      isArray: Array.isArray(messagesData),
-      hasMessages: !!messagesData?.messages,
-      messagesType: typeof messagesData?.messages
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messagesData, messages.length, messagesLoading, selectedNumberId, messagesError]);
 
   // Filter conversations by search
   const filteredConversations = Object.entries(conversations).filter(([contact]) =>
@@ -189,31 +153,6 @@ export default function Messages() {
               </div>
             )}
 
-            {/* Debug info - remove in production */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="p-2 m-2 bg-gray-100 border border-gray-300 rounded text-xs font-mono">
-                <div>Selected Number ID: {selectedNumberId || 'None'}</div>
-                <div>Loading: {messagesLoading ? 'Yes' : 'No'}</div>
-                <div>Messages Count: {messages.length}</div>
-                <div>Messages Array Length: {messagesData?.messages?.length ?? 'N/A'}</div>
-                <div>Total (from API): {messagesData?.total ?? 'N/A'}</div>
-                <div>Conversations: {Object.keys(conversations).length}</div>
-                <div>Has Data: {messagesData ? 'Yes' : 'No'}</div>
-                {messagesData && (
-                  <>
-                    <div>Data Keys: {Object.keys(messagesData).join(', ')}</div>
-                    <div>Messages Type: {typeof messagesData?.messages}</div>
-                    <div>Is Array: {Array.isArray(messagesData?.messages) ? 'Yes' : 'No'}</div>
-                    {messagesData?.messages && messagesData.messages.length > 0 && (
-                      <div className="mt-2 p-2 bg-blue-50 rounded">
-                        First Message: {JSON.stringify(messagesData.messages[0], null, 2)}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-            
             {messagesLoading ? (
               <div className="p-4 space-y-3">
                 {[1, 2, 3].map((i) => (
