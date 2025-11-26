@@ -17,8 +17,17 @@ import type { Message } from '@/types/models';
 export const sendMessage = async (
   data: SendMessageRequest
 ): Promise<SendMessageResponse> => {
-  const response = await apiClient.post<SendMessageResponse>('/messages/send', data);
-  return response.data;
+  const response = await apiClient.post<any>('/messages/send', data);
+  
+  // Transform backend response to match frontend types
+  const message = response.data.message || response.data;
+  return {
+    message: {
+      ...message,
+      from: message.fromNumber || message.from,
+      to: message.toNumber || message.to,
+    }
+  };
 };
 
 /**
@@ -27,17 +36,38 @@ export const sendMessage = async (
 export const getMessages = async (
   params: GetMessagesParams
 ): Promise<GetMessagesResponse> => {
-  const response = await apiClient.get<GetMessagesResponse>('/messages', {
+  const response = await apiClient.get<any>('/messages', {
     params,
   });
-  return response.data;
+  
+  // Transform backend response to match frontend types
+  // Backend returns fromNumber/toNumber, we need from/to
+  const transformedMessages = (response.data.messages || []).map((msg: any) => ({
+    ...msg,
+    from: msg.fromNumber || msg.from,
+    to: msg.toNumber || msg.to,
+  }));
+
+  return {
+    ...response.data,
+    messages: transformedMessages,
+  };
 };
 
 /**
  * Get a single message by ID
  */
 export const getMessage = async (id: string): Promise<{ message: Message }> => {
-  const response = await apiClient.get<{ message: Message }>(`/messages/${id}`);
-  return response.data;
+  const response = await apiClient.get<any>(`/messages/${id}`);
+  
+  // Transform backend response to match frontend types
+  const message = response.data.message || response.data;
+  return {
+    message: {
+      ...message,
+      from: message.fromNumber || message.from,
+      to: message.toNumber || message.to,
+    }
+  };
 };
 
