@@ -24,7 +24,7 @@ export const useWebRTC = (phoneNumberId?: string) => {
   const durationIntervalRef = useRef<number | null>(null);
 
   const queryClient = useQueryClient();
-  const { setActiveCall, clearActiveCall, updateCallDuration, activeCall } = useUIStore();
+  const { setActiveCall, clearActiveCall, updateCallDuration, activeCall, setIncomingCall, clearIncomingCall } = useUIStore();
 
   // Fetch Twilio token - only fetch when we have a phoneNumberId
   const { data: tokenData } = useQuery({
@@ -61,6 +61,19 @@ export const useWebRTC = (phoneNumberId?: string) => {
         console.log('Incoming call:', call);
         setCurrentCall(call);
         setCallStatus('ringing');
+        
+        // Extract caller information from call parameters
+        const from = call.parameters?.From || 'Unknown';
+        const callSid = call.parameters?.CallSid || '';
+        const incomingPhoneNumberId = call.parameters?.PhoneNumberId || phoneNumberId || '';
+        
+        // Show incoming call modal
+        setIncomingCall({
+          callId: callSid,
+          from: from,
+          phoneNumberId: incomingPhoneNumberId,
+        });
+        
         setupCallHandlers(call);
       });
 
@@ -86,6 +99,7 @@ export const useWebRTC = (phoneNumberId?: string) => {
     call.on('accept', () => {
       console.log('Call accepted');
       setCallStatus('active');
+      clearIncomingCall(); // Clear incoming call modal
       setActiveCall({
         callId: call.parameters.CallSid || '',
         status: 'active',
@@ -140,7 +154,7 @@ export const useWebRTC = (phoneNumberId?: string) => {
       // Invalidate calls cache to refresh call history
       queryClient.invalidateQueries({ queryKey: ['calls'] });
     });
-  }, [setActiveCall, clearActiveCall, queryClient]);
+  }, [setActiveCall, clearActiveCall, clearIncomingCall, queryClient]);
 
   // Start call mutation
   const startCallMutation = useMutation({
@@ -203,6 +217,25 @@ export const useWebRTC = (phoneNumberId?: string) => {
     queryClient.invalidateQueries({ queryKey: ['calls'] });
   }, [currentCall, clearActiveCall, queryClient]);
 
+  // Accept incoming call
+  const acceptCall = useCallback(() => {
+    if (currentCall && callStatus === 'ringing') {
+      currentCall.accept();
+      clearIncomingCall();
+      // The 'accept' event handler will set status to 'active'
+    }
+  }, [currentCall, callStatus, clearIncomingCall]);
+
+  // Reject incoming call
+  const rejectCall = useCallback(() => {
+    if (currentCall && callStatus === 'ringing') {
+      currentCall.reject();
+      clearIncomingCall();
+      setCallStatus('ended');
+      setCurrentCall(null);
+    }
+  }, [currentCall, callStatus, clearIncomingCall]);
+
   // Mute/unmute
   const toggleMute = useCallback(() => {
     if (currentCall) {
@@ -250,6 +283,8 @@ export const useWebRTC = (phoneNumberId?: string) => {
     callDuration,
     makeCall,
     endCall,
+    acceptCall,
+    rejectCall,
     toggleMute,
     isReady: device !== null,
     isMuted: activeCall?.isMuted || false,

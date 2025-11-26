@@ -55,12 +55,13 @@ export default function Calls() {
     callDuration,
     makeCall,
     endCall,
+    acceptCall,
+    rejectCall,
     toggleMute,
   } = useWebRTC(selectedNumberId || undefined);
 
   // Incoming call state from UI store
   const incomingCall = useUIStore((state) => state.incomingCall);
-  const clearIncomingCall = useUIStore((state) => state.clearIncomingCall);
 
   const selectedNumber = phoneNumbers.find((n) => n.id === selectedNumberId);
 
@@ -88,14 +89,13 @@ export default function Calls() {
   };
 
   const handleAcceptIncoming = () => {
-    // Accept logic would go here
-    // For now, just clear the incoming call
-    clearIncomingCall();
+    // Accept the incoming call using Twilio SDK
+    acceptCall();
   };
 
   const handleRejectIncoming = () => {
-    // Reject logic would go here
-    clearIncomingCall();
+    // Reject the incoming call using Twilio SDK
+    rejectCall();
   };
 
   // Filter call history
