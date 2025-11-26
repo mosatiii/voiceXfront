@@ -76,7 +76,7 @@ export const useWebRTC = (phoneNumberId?: string) => {
           console.error('Token expired, need to refresh');
           toast.error('Call device token expired. Refreshing...');
         } else {
-          toast.error('Call device error: ' + error.message);
+        toast.error('Call device error: ' + error.message);
         }
       });
 

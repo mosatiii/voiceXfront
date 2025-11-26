@@ -89,8 +89,8 @@ export default function PhoneNumbers() {
             </>
           ) : (
             <>
-              <Plus className="w-4 h-4 mr-2" />
-              Rent New Number
+          <Plus className="w-4 h-4 mr-2" />
+          Rent New Number
             </>
           )}
         </Button>
