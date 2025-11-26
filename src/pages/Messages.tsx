@@ -3,7 +3,7 @@
  * WhatsApp/iMessage-style UI
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageSquare, Send, Search, MoreVertical, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,10 +26,12 @@ export default function Messages() {
   const { data: numbersData, isLoading: numbersLoading } = useMyNumbers();
   const phoneNumbers = numbersData?.phoneNumbers || [];
 
-  // Auto-select first number
-  if (!selectedNumberId && phoneNumbers.length > 0 && phoneNumbers[0]) {
-    setSelectedNumberId(phoneNumbers[0].id);
-  }
+  // Auto-select first number (using useEffect to avoid render issues)
+  useEffect(() => {
+    if (!selectedNumberId && phoneNumbers.length > 0 && phoneNumbers[0]) {
+      setSelectedNumberId(phoneNumbers[0].id);
+    }
+  }, [selectedNumberId, phoneNumbers]);
 
   // Fetch messages for selected number
   const { data: messagesData, isLoading: messagesLoading, error: messagesError } = useMessages(
@@ -41,7 +43,8 @@ export default function Messages() {
 
   // Group messages by conversation
   const conversations = messages.reduce((acc, msg) => {
-    const contact = msg.direction === 'inbound' ? msg.from : msg.to;
+    // Ensure we have valid from/to values
+    const contact = msg.direction === 'inbound' ? (msg.from || 'Unknown') : (msg.to || 'Unknown');
     if (!acc[contact]) {
       acc[contact] = [];
     }
@@ -49,17 +52,29 @@ export default function Messages() {
     return acc;
   }, {} as Record<string, typeof messages>);
   
-  // DEBUG - Detailed
-  console.log('📬 Messages Debug:', {
-    selectedNumberId,
-    phoneNumbersCount: phoneNumbers.length,
-    messagesData,
-    messagesArray: messagesData?.messages,
-    messagesCount: messages.length,
-    messagesLoading,
-    messagesError,
-    conversationsCount: Object.keys(conversations).length
-  });
+  // DEBUG - Detailed (only log if there's an issue)
+  useEffect(() => {
+    if (messages.length === 0 && !messagesLoading && selectedNumberId) {
+      console.log('📬 Messages Debug (No messages found):', {
+        selectedNumberId,
+        phoneNumbersCount: phoneNumbers.length,
+        messagesData,
+        messagesArray: messagesData?.messages,
+        messagesCount: messages.length,
+        messagesLoading,
+        messagesError,
+        conversationsCount: Object.keys(conversations).length,
+        rawMessages: messagesData
+      });
+    } else if (messages.length > 0) {
+      console.log('📬 Messages Debug (Messages found):', {
+        messagesCount: messages.length,
+        conversationsCount: Object.keys(conversations).length,
+        conversationKeys: Object.keys(conversations)
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length, messagesLoading, selectedNumberId, messagesError]);
 
   // Filter conversations by search
   const filteredConversations = Object.entries(conversations).filter(([contact]) =>
@@ -168,64 +183,101 @@ export default function Messages() {
                   <div key={i} className="h-16 animate-pulse bg-gray-100 rounded-lg" />
                 ))}
               </div>
-            ) : filteredConversations.length > 0 ? (
-              <div>
-                {filteredConversations.map(([contact, msgs]) => {
-                  const lastMessage = msgs[msgs.length - 1];
-                  // Count unread inbound messages (status is 'received' for inbound)
-                  const unreadCount = msgs.filter(
-                    (m) => m.direction === 'inbound' && m.status === 'received'
-                  ).length;
+            ) : messages.length > 0 ? (
+              filteredConversations.length > 0 ? (
+                <div>
+                  {filteredConversations.map(([contact, msgs]) => {
+                    const lastMessage = msgs[msgs.length - 1];
+                    // Count unread inbound messages (status is 'received' for inbound)
+                    const unreadCount = msgs.filter(
+                      (m) => m.direction === 'inbound' && m.status === 'received'
+                    ).length;
 
-                  return (
-                    <div
-                      key={contact}
-                      onClick={() => {
-                        setSelectedConversation(contact);
-                        setView('conversations');
-                      }}
-                      className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
-                        selectedConversation === contact ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Avatar */}
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                          {formatPhoneNumber(contact).charAt(1)}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="font-semibold text-sm truncate">
-                              {formatPhoneNumber(contact)}
-                            </p>
-                            <span className="text-xs text-gray-500 flex-shrink-0">
-                              {lastMessage && formatRelativeTime(lastMessage.createdAt)}
-                            </span>
+                    return (
+                      <div
+                        key={contact}
+                        onClick={() => {
+                          setSelectedConversation(contact);
+                          setView('conversations');
+                        }}
+                        className={`p-4 border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
+                          selectedConversation === contact ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Avatar */}
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                            {formatPhoneNumber(contact).charAt(1)}
                           </div>
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm text-gray-600 truncate">
-                              {lastMessage?.direction === 'outbound' && 'You: '}
-                              {lastMessage?.body || 'No messages'}
-                            </p>
-                            {unreadCount > 0 && (
-                              <Badge className="ml-2 bg-blue-600 text-white text-xs">
-                                {unreadCount}
-                              </Badge>
-                            )}
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="font-semibold text-sm truncate">
+                                {formatPhoneNumber(contact)}
+                              </p>
+                              <span className="text-xs text-gray-500 flex-shrink-0">
+                                {lastMessage && formatRelativeTime(lastMessage.createdAt)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm text-gray-600 truncate">
+                                {lastMessage?.direction === 'outbound' && 'You: '}
+                                {lastMessage?.body || 'No messages'}
+                              </p>
+                              {unreadCount > 0 && (
+                                <Badge className="ml-2 bg-blue-600 text-white text-xs">
+                                  {unreadCount}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                  <MessageSquare className="w-16 h-16 text-gray-300 mb-4" />
+                  <p className="text-gray-500">No conversations match your search</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {messages.length} message(s) found but filtered out
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSearchQuery('')}
+                    className="mt-4"
+                  >
+                    Clear Search
+                  </Button>
+                </div>
+              )
             ) : (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                 <MessageSquare className="w-16 h-16 text-gray-300 mb-4" />
                 <p className="text-gray-500">No conversations yet</p>
                 <p className="text-sm text-gray-400 mt-1">Send a message to get started</p>
+                {messagesError && (
+                  <p className="text-xs text-red-500 mt-2">Error loading messages. Check console.</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                <MessageSquare className="w-16 h-16 text-gray-300 mb-4" />
+                <p className="text-gray-500">No conversations match your search</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  {messages.length} message(s) found but filtered out
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSearchQuery('')}
+                  className="mt-4"
+                >
+                  Clear Search
+                </Button>
               </div>
             )}
           </div>
