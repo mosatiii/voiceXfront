@@ -33,16 +33,31 @@ export default function Messages() {
   }
   }, [selectedNumberId, phoneNumbers]);
 
-  // Fetch messages for selected number
+  // Fetch messages - try without phoneNumberId filter first to see all messages
+  // If user has messages, they might be under a different number
   const { data: messagesData, isLoading: messagesLoading, error: messagesError } = useMessages(
-    selectedNumberId ? { phoneNumberId: selectedNumberId, limit: 100 } : { limit: 100 },
-    { enabled: !!selectedNumberId } // Only fetch when we have a selected number
+    { limit: 100 }, // Fetch all messages, not filtered by phoneNumberId
+    { enabled: phoneNumbers.length > 0 } // Only fetch when we have phone numbers
   );
 
   // Extract messages from response - handle different possible response structures
   const messages = messagesData?.messages || 
                    (Array.isArray(messagesData) ? messagesData : []) || 
                    [];
+
+  // Log the actual messages array to see what we're getting
+  if (messagesData && messages.length === 0) {
+    console.log('⚠️ API returned data but messages array is empty:', {
+      messagesData,
+      messagesArray: messagesData?.messages,
+      messagesArrayLength: messagesData?.messages?.length,
+      messagesArrayType: typeof messagesData?.messages,
+      isArray: Array.isArray(messagesData?.messages),
+      total: messagesData?.total,
+      limit: messagesData?.limit,
+      offset: messagesData?.offset
+    });
+  }
 
   // Group messages by conversation
   const conversations = messages.reduce((acc, msg) => {
@@ -172,10 +187,21 @@ export default function Messages() {
                 <div>Selected Number ID: {selectedNumberId || 'None'}</div>
                 <div>Loading: {messagesLoading ? 'Yes' : 'No'}</div>
                 <div>Messages Count: {messages.length}</div>
+                <div>Messages Array Length: {messagesData?.messages?.length ?? 'N/A'}</div>
+                <div>Total (from API): {messagesData?.total ?? 'N/A'}</div>
                 <div>Conversations: {Object.keys(conversations).length}</div>
                 <div>Has Data: {messagesData ? 'Yes' : 'No'}</div>
                 {messagesData && (
-                  <div>Data Keys: {Object.keys(messagesData).join(', ')}</div>
+                  <>
+                    <div>Data Keys: {Object.keys(messagesData).join(', ')}</div>
+                    <div>Messages Type: {typeof messagesData?.messages}</div>
+                    <div>Is Array: {Array.isArray(messagesData?.messages) ? 'Yes' : 'No'}</div>
+                    {messagesData?.messages && messagesData.messages.length > 0 && (
+                      <div className="mt-2 p-2 bg-blue-50 rounded">
+                        First Message: {JSON.stringify(messagesData.messages[0], null, 2)}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
