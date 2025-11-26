@@ -4,7 +4,7 @@
 
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Phone, Trash2, MessageSquare, PhoneCall } from 'lucide-react';
+import { Plus, Phone, Trash2, MessageSquare, PhoneCall, CreditCard, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useState } from 'react';
+import { toast } from 'sonner';
+
+const MAX_NUMBERS = 2; // Free tier limit
 
 export default function PhoneNumbers() {
   const navigate = useNavigate();
@@ -26,6 +29,24 @@ export default function PhoneNumbers() {
   const releaseNumber = useReleaseNumber();
   const [releaseDialogOpen, setReleaseDialogOpen] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<{ id: string; phoneNumber: string } | null>(null);
+
+  const currentNumberCount = data?.phoneNumbers?.length || 0;
+  const canRentMore = currentNumberCount < MAX_NUMBERS;
+
+  const handleRentClick = () => {
+    if (!canRentMore) {
+      toast.error(`You've reached the free tier limit of ${MAX_NUMBERS} numbers.`, {
+        description: 'Upgrade to rent more numbers',
+        action: {
+          label: 'Go to Billing',
+          onClick: () => navigate('/billing'),
+        },
+        duration: 5000,
+      });
+      return;
+    }
+    navigate('/numbers/search');
+  };
 
   const handleRelease = () => {
     if (selectedNumber) {
@@ -50,15 +71,62 @@ export default function PhoneNumbers() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Phone Numbers</h1>
           <p className="text-gray-600 mt-1">Manage your virtual phone numbers</p>
+          {canRentMore && (
+            <p className="text-sm text-blue-600 mt-1">
+              {currentNumberCount} of {MAX_NUMBERS} numbers (Free tier)
+            </p>
+          )}
         </div>
         <Button
           className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-          onClick={() => navigate('/numbers/search')}
+          onClick={handleRentClick}
+          disabled={!canRentMore}
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Rent New Number
+          {!canRentMore ? (
+            <>
+              <AlertCircle className="w-4 h-4 mr-2" />
+              Limit Reached
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4 mr-2" />
+              Rent New Number
+            </>
+          )}
         </Button>
       </div>
+
+      {/* Limit Reached Banner */}
+      {!canRentMore && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="border-2 border-amber-200 bg-amber-50">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold text-amber-900 mb-1">
+                    You've reached the free tier limit ({MAX_NUMBERS} numbers)
+                  </p>
+                  <p className="text-sm text-amber-700 mb-3">
+                    Upgrade your plan to rent more phone numbers and unlock additional features.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate('/billing')}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600"
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Go to Billing
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Numbers List */}
       {isLoading ? (

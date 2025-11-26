@@ -4,22 +4,31 @@
 
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { Search, Phone, Loader2, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Phone, Loader2, Check, CreditCard, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useSearchNumbers, useRentNumber } from '@/hooks/useApi';
+import { useSearchNumbers, useRentNumber, useMyNumbers } from '@/hooks/useApi';
 import { formatPhoneNumber } from '@/utils/formatters';
 import { useUIStore } from '@/store/uiStore';
+import { toast } from 'sonner';
 import type { AvailablePhoneNumber } from '@/types/models';
 
+const MAX_NUMBERS = 2; // Free tier limit
+
 export default function PhoneNumberSearch() {
+  const navigate = useNavigate();
   const [areaCode, setAreaCode] = useState('');
   const searchNumbers = useSearchNumbers();
   const rentNumber = useRentNumber();
+  const { data: myNumbersData } = useMyNumbers();
   const triggerConfetti = useUIStore((state) => state.triggerConfetti);
+
+  const currentNumberCount = myNumbersData?.phoneNumbers?.length || 0;
+  const canRentMore = currentNumberCount < MAX_NUMBERS;
 
   const handleSearch = () => {
     if (areaCode.length === 3) {
@@ -28,6 +37,19 @@ export default function PhoneNumberSearch() {
   };
 
   const handleRent = (phoneNumber: string) => {
+    // Check if user has reached the limit
+    if (!canRentMore) {
+      toast.error(`You've reached the free tier limit of ${MAX_NUMBERS} numbers.`, {
+        description: 'Upgrade to rent more numbers',
+        action: {
+          label: 'Go to Billing',
+          onClick: () => navigate('/billing'),
+        },
+        duration: 5000,
+      });
+      return;
+    }
+
     rentNumber.mutate(
       { phoneNumber },
       {
@@ -45,6 +67,52 @@ export default function PhoneNumberSearch() {
         <h1 className="text-3xl font-bold text-gray-900">Search Phone Numbers</h1>
         <p className="text-gray-600 mt-1">Find and rent virtual phone numbers in your area</p>
       </div>
+
+      {/* Limit Warning Banner */}
+      {!canRentMore && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="border-2 border-amber-200 bg-amber-50">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold text-amber-900 mb-1">
+                    You've reached the free tier limit ({MAX_NUMBERS} numbers)
+                  </p>
+                  <p className="text-sm text-amber-700 mb-3">
+                    Upgrade your plan to rent more phone numbers and unlock additional features.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate('/billing')}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600"
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Go to Billing
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Number Count Info */}
+      {canRentMore && (
+        <Card className="border-0 shadow-md bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-sm text-blue-700">
+              <Phone className="w-4 h-4" />
+              <span>
+                You have <strong>{currentNumberCount}</strong> of <strong>{MAX_NUMBERS}</strong> numbers (Free tier)
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search Form */}
       <Card className="border-0 shadow-lg">
@@ -113,10 +181,12 @@ export default function PhoneNumberSearch() {
                     <Button
                       className="w-full bg-gradient-to-r from-blue-600 to-purple-600"
                       onClick={() => handleRent(number.phoneNumber)}
-                      disabled={rentNumber.isPending}
+                      disabled={rentNumber.isPending || !canRentMore}
                     >
                       {rentNumber.isPending ? (
                         <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Renting...</>
+                      ) : !canRentMore ? (
+                        <><AlertCircle className="w-4 h-4 mr-2" /> Limit Reached</>
                       ) : (
                         <><Check className="w-4 h-4 mr-2" /> Rent Number</>
                       )}
