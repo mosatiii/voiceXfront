@@ -31,15 +31,22 @@ export default function Calls() {
 
   // Auto-select first voice-capable number (using useEffect to avoid render issues)
   useEffect(() => {
+    // Only auto-select if no number is selected AND we have numbers available
     if (!selectedNumberId && phoneNumbers.length > 0) {
       const firstVoiceNumber = phoneNumbers.find(
         (n) => n.status === 'active' && n.capabilities?.voice !== false
       );
       if (firstVoiceNumber) {
+        console.log('Auto-selecting first voice number:', firstVoiceNumber.id);
         setSelectedNumberId(firstVoiceNumber.id);
       }
     }
   }, [selectedNumberId, phoneNumbers]);
+  
+  // Debug: Log when selectedNumberId changes
+  useEffect(() => {
+    console.log('Selected number ID changed to:', selectedNumberId);
+  }, [selectedNumberId]);
 
   // Fetch call history
   const { data: callsData, isLoading: callsLoading } = useCalls(
@@ -180,14 +187,18 @@ export default function Calls() {
                 <div>
                   <Label className="text-sm">From (Your Number)</Label>
                   <select
-                    key={selectedNumberId || 'none'} // Force re-render when selection changes
                     value={selectedNumberId || ''}
                     onChange={(e) => {
-                      const newId = e.target.value;
-                      console.log('Phone number selection changed:', newId);
+                      const newId = e.target.value || null;
+                      console.log('📞 User selected phone number:', newId);
+                      console.log('📞 Previous selection:', selectedNumberId);
                       setSelectedNumberId(newId);
+                      // Force a small delay to ensure state updates
+                      setTimeout(() => {
+                        console.log('📞 State after update:', newId);
+                      }, 0);
                     }}
-                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
                   >
                     {phoneNumbers
                       .filter((n) => n.status === 'active' && n.capabilities?.voice !== false)
@@ -198,9 +209,15 @@ export default function Calls() {
                       ))}
                   </select>
                   {selectedNumberId && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selected: {formatPhoneNumber(phoneNumbers.find(n => n.id === selectedNumberId)?.phoneNumber || '')}
-                    </p>
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                      <span className="font-semibold text-blue-700">Active:</span>{' '}
+                      <span className="text-blue-600">
+                        {formatPhoneNumber(phoneNumbers.find(n => n.id === selectedNumberId)?.phoneNumber || '')}
+                      </span>
+                      {callsLoading && (
+                        <span className="ml-2 text-gray-500">(Loading calls...)</span>
+                      )}
+                    </div>
                   )}
                 </div>
 
