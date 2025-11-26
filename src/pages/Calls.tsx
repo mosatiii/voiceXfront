@@ -3,7 +3,7 @@
  * Make calls, view history, handle incoming calls
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Phone, History, Search, PhoneCall } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,15 +29,17 @@ export default function Calls() {
   const { data: numbersData, isLoading: numbersLoading } = useMyNumbers();
   const phoneNumbers = numbersData?.phoneNumbers || [];
 
-  // Auto-select first voice-capable number
-  if (!selectedNumberId && phoneNumbers.length > 0) {
-    const firstVoiceNumber = phoneNumbers.find(
-      (n) => n.status === 'active' && n.capabilities?.voice !== false
-    );
-    if (firstVoiceNumber) {
-      setSelectedNumberId(firstVoiceNumber.id);
+  // Auto-select first voice-capable number (using useEffect to avoid render issues)
+  useEffect(() => {
+    if (!selectedNumberId && phoneNumbers.length > 0) {
+      const firstVoiceNumber = phoneNumbers.find(
+        (n) => n.status === 'active' && n.capabilities?.voice !== false
+      );
+      if (firstVoiceNumber) {
+        setSelectedNumberId(firstVoiceNumber.id);
+      }
     }
-  }
+  }, [selectedNumberId, phoneNumbers]);
 
   // Fetch call history
   const { data: callsData, isLoading: callsLoading } = useCalls(
@@ -178,8 +180,13 @@ export default function Calls() {
                 <div>
                   <Label className="text-sm">From (Your Number)</Label>
                   <select
+                    key={selectedNumberId || 'none'} // Force re-render when selection changes
                     value={selectedNumberId || ''}
-                    onChange={(e) => setSelectedNumberId(e.target.value)}
+                    onChange={(e) => {
+                      const newId = e.target.value;
+                      console.log('Phone number selection changed:', newId);
+                      setSelectedNumberId(newId);
+                    }}
                     className="w-full mt-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
                   >
                     {phoneNumbers
@@ -190,6 +197,11 @@ export default function Calls() {
                         </option>
                       ))}
                   </select>
+                  {selectedNumberId && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Selected: {formatPhoneNumber(phoneNumbers.find(n => n.id === selectedNumberId)?.phoneNumber || '')}
+                    </p>
+                  )}
                 </div>
 
                 {/* Country Code Selector */}
