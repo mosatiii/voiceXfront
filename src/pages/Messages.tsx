@@ -26,18 +26,26 @@ export default function Messages() {
   const { data: numbersData, isLoading: numbersLoading } = useMyNumbers();
   const phoneNumbers = numbersData?.phoneNumbers || [];
 
-  // Auto-select first number (using useEffect to avoid render issues)
+  // Auto-select first SMS-capable number (using useEffect to avoid render issues)
   useEffect(() => {
-  if (!selectedNumberId && phoneNumbers.length > 0 && phoneNumbers[0]) {
-    setSelectedNumberId(phoneNumbers[0].id);
-  }
+    if (!selectedNumberId && phoneNumbers.length > 0) {
+      // Find first active number with SMS capability
+      const firstSmsNumber = phoneNumbers.find(
+        (n) => n.status === 'active' && n.capabilities?.sms !== false
+      );
+      if (firstSmsNumber) {
+        setSelectedNumberId(firstSmsNumber.id);
+      } else if (phoneNumbers[0]) {
+        // Fallback to first number if no SMS-capable number found
+        setSelectedNumberId(phoneNumbers[0].id);
+      }
+    }
   }, [selectedNumberId, phoneNumbers]);
 
-  // Fetch messages - try without phoneNumberId filter first to see all messages
-  // If user has messages, they might be under a different number
+  // Fetch messages for selected number
   const { data: messagesData, isLoading: messagesLoading, error: messagesError } = useMessages(
-    { limit: 100 }, // Fetch all messages, not filtered by phoneNumberId
-    { enabled: phoneNumbers.length > 0 } // Only fetch when we have phone numbers
+    selectedNumberId ? { phoneNumberId: selectedNumberId, limit: 100 } : { limit: 100 },
+    { enabled: !!selectedNumberId } // Only fetch when we have a selected number
   );
 
   // Extract messages from response - handle different possible response structures
