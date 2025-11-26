@@ -21,6 +21,7 @@ export const useWebRTC = (phoneNumberId?: string) => {
   const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [currentCall, setCurrentCall] = useState<Call | null>(null);
   const [callDuration, setCallDuration] = useState(0);
+  const [isDeviceRegistered, setIsDeviceRegistered] = useState(false);
   const durationIntervalRef = useRef<number | null>(null);
 
   const queryClient = useQueryClient();
@@ -49,16 +50,47 @@ export const useWebRTC = (phoneNumberId?: string) => {
 
       // Device event listeners
       newDevice.on('registered', () => {
-        console.log('Twilio Device registered');
+        console.log('✅ Twilio Device registered successfully');
+        setIsDeviceRegistered(true);
+      });
+
+      newDevice.on('unregistered', () => {
+        console.warn('⚠️ Twilio Device unregistered');
+        setIsDeviceRegistered(false);
+        // Try to re-register if we have a valid token
+        if (tokenData?.token) {
+          console.log('Attempting to re-register device...');
+          setTimeout(() => {
+            newDevice.register();
+          }, 1000);
+        }
       });
 
       newDevice.on('error', (error) => {
-        console.error('Twilio Device error:', error);
-        toast.error('Call device error: ' + error.message);
+        console.error('❌ Twilio Device error:', error);
+        setIsDeviceRegistered(false);
+        
+        // Handle specific error types
+        if (error.code === 31005) {
+          // Token expired - we'll need a new token
+          console.error('Token expired, need to refresh');
+          toast.error('Call device token expired. Refreshing...');
+        } else {
+          toast.error('Call device error: ' + error.message);
+        }
       });
 
       newDevice.on('incoming', (call) => {
-        console.log('Incoming call:', call);
+        console.log('📞 Incoming call received:', call);
+        console.log('Device state:', newDevice.state);
+        
+        // Check if device is registered
+        if (newDevice.state !== Device.State.Registered) {
+          console.warn('⚠️ Device not registered when call arrived! Current state:', newDevice.state);
+          console.warn('Attempting to register device...');
+          newDevice.register();
+        }
+        
         setCurrentCall(call);
         setCallStatus('ringing');
         
@@ -67,7 +99,7 @@ export const useWebRTC = (phoneNumberId?: string) => {
         const callSid = call.parameters?.CallSid || '';
         const incomingPhoneNumberId = call.parameters?.PhoneNumberId || phoneNumberId || '';
         
-        // Show incoming call modal
+        // Show incoming call modal immediately
         setIncomingCall({
           callId: callSid,
           from: from,
@@ -75,11 +107,25 @@ export const useWebRTC = (phoneNumberId?: string) => {
         });
         
         setupCallHandlers(call);
+        
+        // Play notification sound (browser will handle this)
+        // The modal appearing should be enough to alert the user
       });
 
-      // Register device
+      // Register device and track registration
+      console.log('🔄 Registering Twilio Device...');
       newDevice.register();
       setDevice(newDevice);
+      
+      // Check registration status after a short delay
+      setTimeout(() => {
+        if (newDevice.state === Device.State.Registered) {
+          setIsDeviceRegistered(true);
+          console.log('✅ Device registration confirmed');
+        } else {
+          console.warn('⚠️ Device registration pending, state:', newDevice.state);
+        }
+      }, 2000);
     } catch (error) {
       console.error('Failed to initialize Twilio Device:', error);
       toast.error('Failed to initialize calling device');
@@ -287,6 +333,7 @@ export const useWebRTC = (phoneNumberId?: string) => {
     rejectCall,
     toggleMute,
     isReady: device !== null,
+    isDeviceRegistered,
     isMuted: activeCall?.isMuted || false,
   };
 };
