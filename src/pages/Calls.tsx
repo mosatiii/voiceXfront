@@ -80,7 +80,8 @@ export default function Calls() {
 
     try {
       const e164Number = getE164Number();
-      await makeCall(e164Number, selectedNumber.phoneNumber);
+      // Pass the phoneNumberId (database ID), not the phone number string
+      await makeCall(e164Number, selectedNumberId);
     } catch (error) {
       console.error('Failed to make call:', error);
     }
