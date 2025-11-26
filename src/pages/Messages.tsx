@@ -39,7 +39,10 @@ export default function Messages() {
     { enabled: !!selectedNumberId } // Only fetch when we have a selected number
   );
 
-  const messages = messagesData?.messages || [];
+  // Extract messages from response - handle different possible response structures
+  const messages = messagesData?.messages || 
+                   (Array.isArray(messagesData) ? messagesData : []) || 
+                   [];
 
   // Group messages by conversation
   const conversations = messages.reduce((acc, msg) => {
@@ -52,29 +55,27 @@ export default function Messages() {
     return acc;
   }, {} as Record<string, typeof messages>);
   
-  // DEBUG - Detailed (only log if there's an issue)
+  // DEBUG - Always log to help diagnose issues
   useEffect(() => {
-    if (messages.length === 0 && !messagesLoading && selectedNumberId) {
-      console.log('📬 Messages Debug (No messages found):', {
-    selectedNumberId,
-    phoneNumbersCount: phoneNumbers.length,
-    messagesData,
-    messagesArray: messagesData?.messages,
-    messagesCount: messages.length,
-    messagesLoading,
-    messagesError,
-        conversationsCount: Object.keys(conversations).length,
-        rawMessages: messagesData
-      });
-    } else if (messages.length > 0) {
-      console.log('📬 Messages Debug (Messages found):', {
-        messagesCount: messages.length,
-        conversationsCount: Object.keys(conversations).length,
-        conversationKeys: Object.keys(conversations)
-      });
-    }
+    console.log('📬 Messages Debug:', {
+      selectedNumberId,
+      phoneNumbersCount: phoneNumbers.length,
+      phoneNumbers: phoneNumbers.map(n => ({ id: n.id, number: n.phoneNumber })),
+      messagesData,
+      messagesArray: messagesData?.messages,
+      messagesCount: messages.length,
+      messagesLoading,
+      messagesError,
+      conversationsCount: Object.keys(conversations).length,
+      conversationKeys: Object.keys(conversations),
+      rawResponse: messagesData,
+      // Check if response structure is different
+      isArray: Array.isArray(messagesData),
+      hasMessages: !!messagesData?.messages,
+      messagesType: typeof messagesData?.messages
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages.length, messagesLoading, selectedNumberId, messagesError]);
+  }, [messagesData, messages.length, messagesLoading, selectedNumberId, messagesError]);
 
   // Filter conversations by search
   const filteredConversations = Object.entries(conversations).filter(([contact]) =>
@@ -159,6 +160,23 @@ export default function Messages() {
               <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800 font-medium">Failed to load messages</p>
                 <p className="text-xs text-red-600 mt-1">Check console for details</p>
+                <p className="text-xs text-red-500 mt-2 font-mono">
+                  Error: {messagesError instanceof Error ? messagesError.message : String(messagesError)}
+                </p>
+              </div>
+            )}
+
+            {/* Debug info - remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="p-2 m-2 bg-gray-100 border border-gray-300 rounded text-xs font-mono">
+                <div>Selected Number ID: {selectedNumberId || 'None'}</div>
+                <div>Loading: {messagesLoading ? 'Yes' : 'No'}</div>
+                <div>Messages Count: {messages.length}</div>
+                <div>Conversations: {Object.keys(conversations).length}</div>
+                <div>Has Data: {messagesData ? 'Yes' : 'No'}</div>
+                {messagesData && (
+                  <div>Data Keys: {Object.keys(messagesData).join(', ')}</div>
+                )}
               </div>
             )}
             
