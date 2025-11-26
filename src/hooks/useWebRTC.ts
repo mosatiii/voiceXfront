@@ -114,6 +114,9 @@ export const useWebRTC = (phoneNumberId?: string) => {
       stopDurationTimer();
       clearActiveCall();
       setCurrentCall(null);
+      
+      // Invalidate calls cache to refresh call history
+      queryClient.invalidateQueries({ queryKey: ['calls'] });
     });
 
     call.on('reject', () => {
@@ -121,6 +124,9 @@ export const useWebRTC = (phoneNumberId?: string) => {
       setCallStatus('ended');
       clearActiveCall();
       setCurrentCall(null);
+      
+      // Invalidate calls cache to refresh call history
+      queryClient.invalidateQueries({ queryKey: ['calls'] });
     });
 
     call.on('error', (error) => {
@@ -130,6 +136,9 @@ export const useWebRTC = (phoneNumberId?: string) => {
       stopDurationTimer();
       clearActiveCall();
       setCurrentCall(null);
+      
+      // Invalidate calls cache to refresh call history
+      queryClient.invalidateQueries({ queryKey: ['calls'] });
     });
   }, [setActiveCall, clearActiveCall, queryClient]);
 
@@ -189,7 +198,10 @@ export const useWebRTC = (phoneNumberId?: string) => {
     setCallStatus('ended');
     stopDurationTimer();
     clearActiveCall();
-  }, [currentCall, clearActiveCall]);
+    
+    // Invalidate calls cache to refresh call history immediately
+    queryClient.invalidateQueries({ queryKey: ['calls'] });
+  }, [currentCall, clearActiveCall, queryClient]);
 
   // Mute/unmute
   const toggleMute = useCallback(() => {

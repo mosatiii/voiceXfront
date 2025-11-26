@@ -103,6 +103,8 @@ export const useCalls = (params: GetCallsParams, options?: { enabled?: boolean }
     queryKey: ['calls', params],
     queryFn: () => callsApi.getCalls(params),
     enabled: options?.enabled ?? true, // Allow disabling the query
+    refetchOnWindowFocus: true, // Refetch when user returns to the tab
+    refetchOnMount: true, // Refetch when component mounts
   });
 };
 
