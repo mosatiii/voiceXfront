@@ -13,6 +13,7 @@ import { MessageThread } from '@/components/messages/MessageThread';
 import { SendMessageForm } from '@/components/messages/SendMessageForm';
 import { useMyNumbers, useMessages } from '@/hooks/useApi';
 import { formatPhoneNumber, formatRelativeTime } from '@/utils/formatters';
+import type { Message } from '@/types/models';
 
 type View = 'conversations' | 'send';
 
@@ -62,12 +63,12 @@ export default function Messages() {
     }
     acc[contact].push(msg);
     return acc;
-  }, {} as Record<string, typeof messages>);
+  }, {} as Record<string, Message[]>);
 
   // Filter conversations by search
   const filteredConversations = Object.entries(conversations).filter(([contact]) =>
     contact.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) as Array<[string, Message[]]>;
 
   const conversationMessages = selectedConversation ? conversations[selectedConversation] || [] : [];
 
